@@ -1,0 +1,17 @@
+{
+  "name": "Dévers de piste — déblai / remblai",
+  "short_name": "Dévers piste",
+  "description": "Calcul de pente entre deux points levés et des volumes à raboter ou recharger pour atteindre un dévers cible. Fonctionne sans réseau.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#E9ECEE",
+  "theme_color": "#14181C",
+  "lang": "fr",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
