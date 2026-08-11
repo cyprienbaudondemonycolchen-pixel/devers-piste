@@ -1,7 +1,7 @@
 {
-  "name": "Dévers de piste — déblai / remblai",
-  "short_name": "Dévers piste",
-  "description": "Calcul de pente entre deux points levés et des volumes à raboter ou recharger pour atteindre un dévers cible. Fonctionne sans réseau.",
+  "name": "Piste — dévers, rampe et terrassement",
+  "short_name": "Piste",
+  "description": "Analyse le dévers et la rampe d'une piste à partir de points GPS, calcule le déblai/remblai et affiche un bloc modèle 3D. Fonctionne sans réseau.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
