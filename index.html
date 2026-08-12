@@ -79,6 +79,11 @@ input[type=text]{width:100%;font-family:var(--font-data);font-size:16px;font-var
   padding:9px 7px;border:1px solid var(--line);border-radius:var(--r);background:#FBFCFC;color:var(--ink);text-align:right}
 input[type=text]:focus{outline:2px solid var(--ink);outline-offset:-1px;background:#fff}
 input::placeholder{color:#B4BEC5;font-weight:400}
+.segpick{flex:0 0 auto;font-family:var(--font-ui);font-size:12px;font-weight:700;border:1px solid var(--line);border-radius:var(--r);padding:0 6px;background:#F5F7F8;color:var(--ink)}
+.segcard{border:1px solid var(--line);border-left:4px solid var(--ok);border-radius:var(--r);padding:10px;margin-bottom:8px}
+.segcard-h{font-size:12px;font-weight:800;margin-bottom:8px}
+.segcard-h span{font-weight:400;color:var(--ink3);font-size:10px}
+.segdir button{padding:8px 4px;font-size:11.5px}
 .addpt{width:100%;margin-top:10px;background:none;border:1px dashed var(--line);border-radius:var(--r);
   padding:11px;font-size:13px;font-weight:700;color:var(--ink2);cursor:pointer}
 .addpt:hover{border-color:var(--ink);color:var(--ink)}
@@ -174,19 +179,16 @@ dialog::backdrop{background:rgba(20,24,28,.45)}
 
     <section class="panel">
       <span class="eyebrow">Ce que je veux obtenir</span>
-      <div class="row">
-        <label class="f" style="flex:1 1 120px"><b>Rampe en long %</b><input type="text" id="gL" inputmode="decimal" value="" placeholder="5"></label>
-        <label class="f" style="flex:1 1 120px"><b>Dévers en travers %</b><input type="text" id="gT" inputmode="decimal" value="" placeholder="2"></label>
+      <div style="margin-bottom:12px">
+        <b class="eyebrow" style="display:block;margin-bottom:5px;font-size:10px">Stratégie de terrassement (toute la piste)</b>
+        <div class="seg three" id="stratSeg"><button type="button" data-s="cut">Déblai</button><button type="button" data-s="bal" aria-pressed="true">Équilibré</button><button type="button" data-s="fill">Remblai</button></div>
       </div>
-      <div style="margin-top:11px">
-        <b class="eyebrow" style="display:block;margin-bottom:5px;font-size:10px">L'eau doit filer vers</b>
-        <div class="seg two"><button type="button" id="dirIn" aria-pressed="true">le bord intérieur</button><button type="button" id="dirOut" aria-pressed="false">le bord extérieur</button></div>
+      <div class="prow-top" style="border:0;margin-bottom:6px">
+        <b class="eyebrow" style="font-size:10px;flex:1">Segments <span id="segCount" style="color:var(--ink3)"></span></b>
+        <div class="sideseg" style="flex:0 0 auto;width:96px"><button type="button" id="segMinus">−</button><button type="button" id="segPlus">+</button></div>
       </div>
-      <div style="margin-top:11px">
-        <b class="eyebrow" style="display:block;margin-bottom:5px;font-size:10px">Stratégie de terrassement</b>
-        <div class="seg three"><button type="button" data-s="cut">Déblai</button><button type="button" data-s="bal" aria-pressed="true">Équilibré</button><button type="button" data-s="fill">Remblai</button></div>
-      </div>
-      <p class="hint">Laisse une case vide pour ne pas contraindre cette pente : l'app garde alors la valeur existante. Rampe = pente le long de la piste, dévers = pente en travers.</p>
+      <div id="segList"></div>
+      <p class="hint" id="segHint">Un seul segment = toute la piste d'un coup. Ajoute des segments pour donner une pente différente à chaque tronçon : chaque point reçoit alors un numéro de segment, et l'app raccorde les tronçons en un profil continu. Laisse une case vide pour garder la pente actuelle de ce tronçon.</p>
     </section>
   </div>
 
@@ -213,19 +215,29 @@ dialog::backdrop{background:rgba(20,24,28,.45)}
     </section>
 
     <section class="sketch" id="planWrap" hidden>
-      <div class="sketch-head"><span class="eyebrow">Vue en plan — position réelle des points</span><span class="chip" style="border-color:var(--line);color:var(--ink3)" id="planScale">—</span></div>
+      <div class="sketch-head"><span class="eyebrow">Vue en plan — position réelle des points</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <label style="display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink2);cursor:pointer"><input type="checkbox" id="satToggle" style="width:16px;height:16px">Fond satellite</label>
+          <select id="satSrc" hidden style="font-size:11px;font-weight:600;border:1px solid var(--line);border-radius:var(--r);padding:3px 4px;background:#F5F7F8"><option value="ign">IGN ortho</option><option value="esri">Esri</option></select>
+          <span class="chip" style="border-color:var(--line);color:var(--ink3)" id="planScale">—</span>
+        </div>
+      </div>
       <canvas id="plan" width="640" height="360" role="img" aria-label="Vue en plan des points levés"></canvas>
       <div class="legend"><span><i class="sw" style="background:var(--int)"></i>Bord intérieur</span><span><i class="sw" style="background:var(--ext)"></i>Bord extérieur</span><span><i class="sw" style="background:var(--ink)"></i>Axe haut / bas</span></div>
     </section>
 
     <section class="sketch" id="blockWrap" hidden>
       <div class="sketch-head"><span class="eyebrow" id="blockTitle">Bloc modèle 3D — glisse pour tourner</span><span class="chip" style="border-color:var(--line);color:var(--ink3)" id="block3dTag">équilibré</span></div>
+      <div class="seg three" id="modeSeg" style="margin-bottom:10px"><button type="button" data-m="avant">Actuel</button><button type="button" data-m="cmp" aria-pressed="true">Comparaison</button><button type="button" data-m="apres">Visé</button></div>
       <canvas id="block" width="640" height="420" role="img" aria-label="Bloc modèle 3D de la piste"></canvas>
-      <div class="legend"><span><i class="sw" style="background:#E24E10"></i>À raboter (déblai)</span><span><i class="sw" style="background:#0B6FA4"></i>À recharger (remblai)</span><span><i class="sw" style="background:#fff;border:1.5px dashed var(--ok)"></i>Profil visé</span><span><i class="sw" style="background:#C9BBA6"></i>Terrain en place</span></div>
+      <div class="legend"><span><i class="sw" style="background:#E24E10"></i>À raboter (déblai)</span><span><i class="sw" style="background:#0B6FA4"></i>À recharger (remblai)</span><span><i class="sw" style="background:#fff;border:1.5px dashed var(--ok)"></i>Profil visé</span><span><i class="sw" style="background:#1273C7"></i>→ écoulement de l'eau</span></div>
       <div class="ctrl3d">
-        <label>Exagération du relief <input type="range" id="exagR" min="1" max="25" value="6"></label>
-        <button class="btn-ghost" id="reset3d" type="button">Recentrer la vue</button>
+        <label>Relief <input type="range" id="exagR" min="1" max="25" value="6"></label>
+        <label>Largeur <input type="range" id="exagH" min="1" max="8" step="0.5" value="1"></label>
+        <button class="btn-ghost" id="reset3d" type="button">Recentrer</button>
+        <button class="btn-ghost" id="fs3d" type="button">⛶ Plein écran</button>
       </div>
+      <p class="hint" id="tapHint" style="margin-top:6px">Touche un point du bloc pour voir sa hauteur à raboter ou recharger.</p>
     </section>
 
     <section class="sketch" id="profWrap" hidden>
@@ -248,82 +260,110 @@ dialog::backdrop{background:rgba(20,24,28,.45)}
 
 <script>
 "use strict";
-/* ===================== moteur géométrique (validé) ===================== */
+/* ===================== moteur géométrique — axe courbe (validé) ===================== */
 const mean=a=>a.length?a.reduce((s,x)=>s+x,0)/a.length:NaN;
+const medv=a=>{const b=[...a].sort((x,y)=>x-y),n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):0;};
 function solve3(M,b){const A=M.map((r,i)=>[...r,b[i]]);
   for(let c=0;c<3;c++){let piv=c;for(let r=c+1;r<3;r++)if(Math.abs(A[r][c])>Math.abs(A[piv][c]))piv=r;
     if(Math.abs(A[piv][c])<1e-12)return null;[A[c],A[piv]]=[A[piv],A[c]];
     for(let r=0;r<3;r++)if(r!==c){const f=A[r][c]/A[c][c];for(let k=c;k<4;k++)A[r][k]-=f*A[c][k];}}
   return[A[0][3]/A[0][0],A[1][3]/A[1][1],A[2][3]/A[2][2]];}
-function triangulate(P){
-  const int=P.filter(p=>p.side==="int").sort((a,b)=>a.u-b.u);
-  const ext=P.filter(p=>p.side==="ext").sort((a,b)=>a.u-b.u);
-  const tris=[];
-  if(int.length>=2&&ext.length>=2){const nStat=Math.min(int.length,ext.length);
-    const pick=(arr,k)=>arr[Math.round(k*(arr.length-1)/(nStat-1))];
-    for(let k=0;k<nStat-1;k++){const ia=pick(int,k),ib=pick(int,k+1),ea=pick(ext,k),eb=pick(ext,k+1);
-      tris.push([ia,ib,ea]);tris.push([ib,eb,ea]);}}
-  return tris;}
+function projOn(M,s,p){let best={d2:1e18,s:0,e:0};
+  for(let j=0;j<M.length-1;j++){const ax=M[j].x,ay=M[j].y,dx=M[j+1].x-ax,dy=M[j+1].y-ay,L2=dx*dx+dy*dy||1e-9;
+    let t=((p.x-ax)*dx+(p.y-ay)*dy)/L2;t=Math.max(0,Math.min(1,t));
+    const px=ax+t*dx,py=ay+t*dy,d2=(p.x-px)**2+(p.y-py)**2;
+    if(d2<best.d2){const cr=dx*(p.y-ay)-dy*(p.x-ax);best={d2,s:s[j]+t*Math.hypot(dx,dy),e:Math.sign(cr)*Math.sqrt(d2)};}}
+  return best;}
+function chaikin(M,iter){for(let it=0;it<iter;it++){if(M.length<3)break;const out=[M[0]];
+  for(let i=0;i<M.length-1;i++){const a=M[i],b=M[i+1];
+    out.push({x:a.x*.75+b.x*.25,y:a.y*.75+b.y*.25,z:a.z*.75+b.z*.25});
+    out.push({x:a.x*.25+b.x*.75,y:a.y*.25+b.y*.75,z:a.z*.25+b.z*.75});}
+  out.push(M[M.length-1]);M=out;}return M;}
+function medianLine(sub){
+  const mids=[];for(let i=0;i<sub.length-1;i++)mids.push({x:(sub[i].x+sub[i+1].x)/2,y:(sub[i].y+sub[i+1].y)/2,z:(sub[i].z+sub[i+1].z)/2});
+  let M=mids.map((m,i)=>{const a=mids[Math.max(0,i-1)],b=mids[Math.min(mids.length-1,i+1)];return{x:(a.x+m.x+b.x)/3,y:(a.y+m.y+b.y)/3,z:m.z};});
+  M=chaikin(M,2); // lissage : courbe douce, pas d'angle abrupt
+  const s=[0];for(let i=1;i<M.length;i++)s.push(s[i-1]+Math.hypot(M[i].x-M[i-1].x,M[i].y-M[i-1].y));
+  return{M,s};}
+function buildMedian(bord){let keep=bord.map((_,i)=>i),outliers=[];
+  for(let pass=0;pass<2;pass++){const sub=keep.map(i=>bord[i]);if(sub.length<2)break;const{M,s}=medianLine(sub);
+    const es=bord.map(p=>projOn(M,s,p).e);const mabs=medv(es.map(Math.abs)),thr=Math.max(3*mabs,mabs+4);
+    const nk=bord.map((p,i)=>i).filter(i=>Math.abs(es[i])<=thr);
+    outliers=bord.map((p,i)=>i).filter(i=>Math.abs(es[i])>thr);
+    if(nk.length===keep.length||nk.length<2)break;keep=nk;}
+  const sub=keep.map(i=>bord[i]);return{...medianLine(sub),outliers};}
 const triArea=(a,b,c)=>Math.abs((b.u-a.u)*(c.v-a.v)-(c.u-a.u)*(b.v-a.v))/2;
-function analyze(points,target){
-  const bord=points.filter(p=>p.role==="bord"&&isFinite(p.x)&&isFinite(p.y)&&isFinite(p.z));
-  const all=points.filter(p=>isFinite(p.x)&&isFinite(p.y)&&isFinite(p.z));
+function fitSE(P){let Suu=0,Svv=0,Suv=0,Su=0,Sv=0,S1=P.length,Sz=0,Suz=0,Svz=0;
+  P.forEach(p=>{Suu+=p.u*p.u;Svv+=p.v*p.v;Suv+=p.u*p.v;Su+=p.u;Sv+=p.v;Sz+=p.z;Suz+=p.u*p.z;Svz+=p.v*p.z;});
+  const r=solve3([[Suu,Suv,Su],[Suv,Svv,Sv],[Su,Sv,S1]],[Suz,Svz,Sz]);
+  if(!r)return{cu:0,cv:0,c0:mean(P.map(p=>p.z))};
+  let ss=0,sr=0,mz=Sz/S1;P.forEach(p=>{const zf=r[2]+r[0]*p.u+r[1]*p.v;sr+=(p.z-zf)**2;ss+=(p.z-mz)**2;});
+  return{cu:r[0],cv:r[1],c0:r[2],r2:ss>1e-9?1-sr/ss:1,rmse:Math.sqrt(sr/S1)};}
+function analyze(points,segDefs,strat){
+  const bordAll=points.filter(p=>p.role==="bord"&&isFinite(p.x)&&isFinite(p.y)&&isFinite(p.z));
   const haut=points.find(p=>p.role==="haut"&&isFinite(p.x)&&isFinite(p.z));
-  const bas=points.find(p=>p.role==="bas"&&isFinite(p.x)&&isFinite(p.z));
-  if(bord.length<2&&all.length<2)return{ok:false,reason:"need2",nBord:bord.length,nAll:all.length,haut:!!haut,bas:!!bas};
-  const cloud=bord.length>=2?bord:all;
-  const mx=mean(cloud.map(p=>p.x)),my=mean(cloud.map(p=>p.y));
-  let dx,dy;
-  if(haut&&bas){dx=bas.x-haut.x;dy=bas.y-haut.y;}
-  else{let Cxx=0,Cyy=0,Cxy=0;cloud.forEach(p=>{const ex=p.x-mx,ey=p.y-my;Cxx+=ex*ex;Cyy+=ey*ey;Cxy+=ex*ey;});
-    const ang=0.5*Math.atan2(2*Cxy,Cxx-Cyy);dx=Math.cos(ang);dy=Math.sin(ang);}
-  let dl=Math.hypot(dx,dy);if(dl<1e-9)return{ok:false,reason:"axis"};
-  let d=[dx/dl,dy/dl];const o=[mx,my];
-  const pu=p=>(p.x-o[0])*d[0]+(p.y-o[1])*d[1];
-  const muu=mean(cloud.map(pu));let zu=0;cloud.forEach(p=>zu+=(pu(p)-muu)*p.z);
-  if(zu>0)d=[-d[0],-d[1]];
-  const n=[-d[1],d[0]];
-  const proj=p=>({u:(p.x-o[0])*d[0]+(p.y-o[1])*d[1],v:(p.x-o[0])*n[0]+(p.y-o[1])*n[1],z:p.z,side:p.side,role:p.role,label:p.label});
-  const P=cloud.map(proj);
-  const us=P.map(p=>p.u),vs=P.map(p=>p.v);
-  const uMin=Math.min(...us),uMax=Math.max(...us),vMin=Math.min(...vs),vMax=Math.max(...vs);
-  let L=uMax-uMin,W=vMax-vMin;
-  if(haut&&bas)L=Math.hypot(bas.x-haut.x,bas.y-haut.y);
-  let cu=0,cv=0,c0=mean(P.map(p=>p.z)),planar=null;
-  if(P.length>=3){let Suu=0,Svv=0,Suv=0,Su=0,Sv=0,S1=P.length,Sz=0,Suz=0,Svz=0;
-    P.forEach(p=>{Suu+=p.u*p.u;Svv+=p.v*p.v;Suv+=p.u*p.v;Su+=p.u;Sv+=p.v;Sz+=p.z;Suz+=p.u*p.z;Svz+=p.v*p.z;});
-    const sol=solve3([[Suu,Suv,Su],[Suv,Svv,Sv],[Su,Sv,S1]],[Suz,Svz,Sz]);
-    if(sol){cu=sol[0];cv=sol[1];c0=sol[2];let ss=0,sr=0,mz=Sz/S1;
-      P.forEach(p=>{const zf=c0+cu*p.u+cv*p.v;sr+=(p.z-zf)**2;ss+=(p.z-mz)**2;});
-      planar={rmse:Math.sqrt(sr/S1),r2:ss>1e-9?1-sr/ss:1};}}
-  else if(P.length===2){const a=P[0],b=P[1],du=b.u-a.u,dv=b.v-a.v,dz=b.z-a.z,dd=du*du+dv*dv;
-    cu=dd>1e-9?dz*du/dd:0;cv=dd>1e-9?dz*dv/dd:0;c0=a.z-cu*a.u-cv*a.v;}
-  let curGL=(haut&&bas)?(haut.z-bas.z)/L*100:-cu*100;
-  const curGT=cv*100;
-  const vi=mean(P.filter(p=>p.side==="int").map(p=>p.v)),ve=mean(P.filter(p=>p.side==="ext").map(p=>p.v));
-  const haveSides=isFinite(vi)&&isFinite(ve);
-  let curDeversToInt=haveSides?(cv*ve-cv*vi)/Math.abs(vi-ve)*100:null;
-  const gL=(isFinite(target.gL)?target.gL:0)/100,gT=(isFinite(target.gT)?target.gT:0)/100;
-  const useGL=isFinite(target.gL), useGT=isFinite(target.gT)&&haveSides;
-  const tu=useGL?-gL:cu;
-  let tv=useGT?0:cv;
-  if(useGT&&gT>0){const vC=target.dir==="int"?vi:ve,vO=target.dir==="int"?ve:vi;tv=-gT*Math.sign(vC-vO);}
-  else if(useGT&&gT===0)tv=0;
-  P.forEach(p=>p.r=p.z-(tu*p.u+tv*p.v));
-  const tris=triangulate(P);
-  let areaTot=0,rBar=0;
-  tris.forEach(t=>{const a=triArea(...t);areaTot+=a;rBar+=a*(t[0].r+t[1].r+t[2].r)/3;});
-  const awR=areaTot>1e-9?rBar/areaTot:mean(P.map(p=>p.r));
-  const rs=P.map(p=>p.r);let z0;
-  if(target.strat==="cut")z0=Math.min(...rs);else if(target.strat==="fill")z0=Math.max(...rs);else z0=areaTot>1e-9?awR:mean(rs);
-  P.forEach(p=>{p.tz=z0+tu*p.u+tv*p.v;p.d=p.z-p.tz;});
-  let cut=0,fill=0,method=tris.length?"strip":"approx";
-  if(tris.length)tris.forEach(t=>{const a=triArea(...t);const md=((t[0].z-(z0+tu*t[0].u+tv*t[0].v))+(t[1].z-(z0+tu*t[1].u+tv*t[1].v))+(t[2].z-(z0+tu*t[2].u+tv*t[2].v)))/3;if(md>0)cut+=a*md;else fill+=a*(-md);});
-  else{const area=Math.max(L,0.1)*Math.max(W,0.1);areaTot=area;const pos=P.filter(p=>p.d>0),neg=P.filter(p=>p.d<0);
-    cut=area*(mean(pos.map(p=>p.d))||0)*pos.length/P.length;fill=area*(-(mean(neg.map(p=>p.d))||0))*neg.length/P.length;}
-  return{ok:true,o,d,n,L,W,uMin,uMax,vMin,vMax,curGL,curGT,curDeversToInt,planar,plane:{c0,cu,cv},
-    target:{tu,tv,z0,useGL,useGT},pts:P,tris,vol:{cut,fill,net:cut-fill,area:areaTot,method},
-    haveSides,hasAxisPts:!!(haut&&bas),nBord:bord.length,nAll:all.length};
+  const bas =points.find(p=>p.role==="bas"&&isFinite(p.x)&&isFinite(p.z));
+  if(bordAll.length<3)return{ok:false,reason:"need3",nBord:bordAll.length};
+  let mb=buildMedian(bordAll); let M=mb.M,s=mb.s,outliers=mb.outliers;
+  if(M.length<2)return{ok:false,reason:"axis",nBord:bordAll.length};
+  const z0s=mean(bordAll.slice(0,3).map(p=>p.z)),zEs=mean(bordAll.slice(-3).map(p=>p.z));
+  if(zEs>z0s){M=M.slice().reverse();const tot=s[s.length-1];s=s.map(v=>tot-v).reverse();}
+  const L=s[s.length-1]||1;
+  const proj=bordAll.map((p,i)=>{const pr=projOn(M,s,p);return{x:p.x,y:p.y,z:p.z,side:p.side,seg:p.seg||1,u:pr.s,v:pr.e,out:outliers.includes(i)};});
+  const good=proj.filter(p=>!p.out); if(good.length<3)return{ok:false,reason:"need3",nBord:bordAll.length};
+  const zAxe=u=>{if(u<=s[0])return M[0].z;if(u>=s[s.length-1])return M[M.length-1].z;
+    for(let i=1;i<s.length;i++)if(u<=s[i]){const t=(u-s[i-1])/((s[i]-s[i-1])||1);return M[i-1].z+(M[i].z-M[i-1].z)*t;}return M[M.length-1].z;};
+  const ids=[...new Set(good.map(p=>p.seg))];
+  let segs=ids.map(id=>{const pts=good.filter(p=>p.seg===id);const fit=fitSE(pts);
+    const vi=mean(pts.filter(p=>p.side==="int").map(p=>p.v)),ve=mean(pts.filter(p=>p.side==="ext").map(p=>p.v));
+    return{id,pts,uMin:Math.min(...pts.map(p=>p.u)),uMax:Math.max(...pts.map(p=>p.u)),uMean:mean(pts.map(p=>p.u)),
+      vi,ve,haveSides:isFinite(vi)&&isFinite(ve),fit,def:(segDefs||[]).find(d=>d.id===id)||{gL:NaN,gT:NaN,dir:"int"}};});
+  segs.sort((a,b)=>a.uMean-b.uMean);
+  const uMinG=Math.min(...good.map(p=>p.u)),uMaxG=Math.max(...good.map(p=>p.u));
+  segs.forEach((sg,i)=>{sg.start=i===0?uMinG:(segs[i-1].uMax+sg.uMin)/2; sg.end=i===segs.length-1?uMaxG:(sg.uMax+segs[i+1].uMin)/2;
+    const gL=num(sg.def.gL); sg.straight=isFinite(gL); sg.m=isFinite(gL)?-gL/100:sg.fit.cu;
+    const gT=num(sg.def.gT);
+    if(isFinite(gT)&&sg.haveSides){const vC=sg.def.dir==="int"?sg.vi:sg.ve,vO=sg.def.dir==="int"?sg.ve:sg.vi;sg.tv=-gT/100*Math.sign(vC-vO);}
+    else sg.tv=sg.fit.cv;
+    sg.useGL=isFinite(gL); sg.useGT=isFinite(gT)&&sg.haveSides;
+    sg.curGL=-sg.fit.cu*100; sg.curDeversToInt=sg.haveSides?sg.fit.cv*(sg.ve-sg.vi)/Math.abs(sg.vi-sg.ve)*100:null;});
+  segs[0].gStart=0;
+  for(let i=0;i<segs.length;i++){const sg=segs[i];
+    sg.gEnd=sg.gStart+(sg.straight?sg.m*(sg.end-sg.start):(zAxe(sg.end)-zAxe(sg.start)));
+    if(i<segs.length-1)segs[i+1].gStart=sg.gEnd;}
+  const segAt=u=>{for(const sg of segs)if(u<=sg.end)return sg;return segs[segs.length-1];};
+  const gAxe=u=>{const sg=segAt(u);return sg.gStart+(sg.straight?sg.m*(u-sg.start):(zAxe(u)-zAxe(sg.start)));};
+  // transition de dévers aux frontières internes (le travers tourne progressivement)
+  const knots=[];
+  for(let k=0;k<segs.length-1;k++){const b=segs[k].end;
+    const lenL=segs[k].end-segs[k].start, lenR=segs[k+1].end-segs[k+1].start;
+    const h=Math.max(1.5,Math.min(0.3*Math.min(lenL,lenR),0.45*Math.min(lenL,lenR)));
+    knots.push({b,h,tvL:segs[k].tv,tvR:segs[k+1].tv});}
+  const tvAt=u=>{for(const kn of knots)if(Math.abs(u-kn.b)<kn.h){const t=(u-(kn.b-kn.h))/(2*kn.h);return kn.tvL*(1-t)+kn.tvR*t;}return segAt(u).tv;};
+  good.forEach(p=>{p.tv=tvAt(p.u);p.base=gAxe(p.u)+p.tv*p.v;p.r=p.z-p.base;});
+  const tris=[];
+  segs.forEach(sg=>{const int=sg.pts.filter(p=>p.side==="int").sort((a,b)=>a.u-b.u),ext=sg.pts.filter(p=>p.side==="ext").sort((a,b)=>a.u-b.u);
+    if(int.length>=2&&ext.length>=2){const nS=Math.min(int.length,ext.length),pick=(A,k)=>A[Math.round(k*(A.length-1)/(nS-1))];
+      for(let k=0;k<nS-1;k++){tris.push([pick(int,k),pick(int,k+1),pick(ext,k)]);tris.push([pick(int,k+1),pick(ext,k+1),pick(ext,k)]);}}});
+  let area=0,rBar=0;tris.forEach(t=>{const a=triArea(...t);area+=a;rBar+=a*(t[0].r+t[1].r+t[2].r)/3;});
+  const rs=good.map(p=>p.r);let Z0;if(strat==="cut")Z0=Math.min(...rs);else if(strat==="fill")Z0=Math.max(...rs);else Z0=area>1e-9?rBar/area:mean(rs);
+  proj.forEach(p=>{p.tv=tvAt(p.u);p.base=gAxe(p.u)+p.tv*p.v;p.tz=Z0+p.base;p.d=p.z-p.tz;});
+  let cut=0,fill=0;tris.forEach(t=>{const a=triArea(...t);const md=((t[0].z-(Z0+t[0].base))+(t[1].z-(Z0+t[1].base))+(t[2].z-(Z0+t[2].base)))/3;if(md>0)cut+=a*md;else fill+=a*(-md);});
+  const gfit=fitSE(good);
+  const curGLg=(haut&&bas)?(haut.z-bas.z)/L*100:-gfit.cu*100;
+  const eInt=mean(good.filter(p=>p.side==="int").map(p=>p.v)),eExt=mean(good.filter(p=>p.side==="ext").map(p=>p.v));
+  const haveSides=isFinite(eInt)&&isFinite(eExt);
+  const curDeversToInt=haveSides?gfit.cv*(eExt-eInt)/Math.abs(eInt-eExt)*100:null;
+  const anyGL=segs.some(sg=>sg.useGL), anyGT=segs.some(sg=>sg.useGT);
+  const uMin=uMinG,uMax=uMaxG,vMin=Math.min(...good.map(p=>p.v)),vMax=Math.max(...good.map(p=>p.v));
+  const tuAvg=(gAxe(uMax)-gAxe(uMin))/((uMax-uMin)||1);
+  return{ok:true,M,s,L,W:haveSides?Math.abs(eInt-eExt):(vMax-vMin),curGL:curGLg,curGT:gfit.cv*100,curDeversToInt,
+    haveSides,planar:{r2:gfit.r2,rmse:gfit.rmse},plane:{cu:gfit.cu,cv:gfit.cv,c0:gfit.c0},
+    target:{useGL:anyGL,useGT:anyGT,tu:tuAvg,tv:segs[0]?segs[0].tv:0,z0:Z0},
+    pts:proj,vol:{cut,fill,net:cut-fill,area},
+    segs:segs.map(sg=>({id:sg.id,start:sg.start,end:sg.end,curGL:sg.curGL,curDeversToInt:sg.curDeversToInt,def:sg.def,straight:sg.straight,useGL:sg.useGL,useGT:sg.useGT,
+      slope:sg.m,tv:sg.tv,curCu:sg.fit.cu,curCv:sg.fit.cv})),
+    uMin,uMax,vMin,vMax,nBord:bordAll.length,nOut:outliers.length,hasAxisPts:!!(haut&&bas)};
 }
 
 /* ===================== formats ===================== */
@@ -336,14 +376,19 @@ const cm=v=>Math.abs(v)*100<100?f(Math.abs(v)*100,1)+" cm":f(Math.abs(v),2)+" m"
 
 /* ===================== projets (stockage) ===================== */
 const KEY="piste2.projects", CUR="piste2.cur";
-let projects=[], curId=null, view3d={yaw:-0.4,pitch:1.05,exag:6};
+let projects=[], curId=null, view3d={yaw:-0.4,pitch:1.05,exag:6,exagH:1,mode:"cmp"};
 function uid(){return "p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6);}
-function blankPoint(side){return{id:uid(),side:side||"int",role:side==="haut"||side==="bas"?side:"bord",x:"",y:"",z:"",label:""};}
+function blankPoint(side){return{id:uid(),side:side||"int",role:side==="haut"||side==="bas"?side:"bord",seg:1,x:"",y:"",z:"",label:""};}
 function blankProject(title){return{id:uid(),title:title||"Piste 1",
   points:[blankPoint("int"),blankPoint("ext"),{...blankPoint("int"),side:"haut",role:"haut"},{...blankPoint("int"),side:"bas",role:"bas"}],
-  gL:"",gT:"",dir:"int",strat:"bal"};}
+  segs:[{id:1,gL:"",gT:"",dir:"int"}],strat:"bal"};}
+function migrate(p){ // ancien format (gL/gT/dir uniques) -> segs
+  if(!p.segs){p.segs=[{id:1,gL:p.gL||"",gT:p.gT||"",dir:p.dir||"int"}];delete p.gL;delete p.gT;delete p.dir;}
+  p.points.forEach(pt=>{if(pt.seg==null)pt.seg=1;});
+  if(!p.strat)p.strat="bal"; return p;}
 function loadAll(){try{projects=JSON.parse(localStorage.getItem(KEY)||"null")||[];curId=localStorage.getItem(CUR);}catch(e){projects=[];}
   if(!projects.length){const p=blankProject("Piste 1");projects=[p];curId=p.id;}
+  projects.forEach(migrate);
   if(!projects.find(p=>p.id===curId))curId=projects[0].id;}
 function saveAll(){try{localStorage.setItem(KEY,JSON.stringify(projects));localStorage.setItem(CUR,curId);}catch(e){}}
 const cur=()=>projects.find(p=>p.id===curId);
@@ -352,15 +397,36 @@ const cur=()=>projects.find(p=>p.id===curId);
 const SIDES=[["int","INT.","i"],["ext","EXT.","e"],["haut","AXE ↑","h"],["bas","AXE ↓","b"]];
 function renderPointList(){
   const p=cur(); const host=$("pointList"); host.innerHTML="";
+  const nSeg=p.segs.length;
   p.points.forEach((pt)=>{
     const row=document.createElement("div"); row.className="prow";
     const isActive=s=>(s==="haut"&&pt.role==="haut")||(s==="bas"&&pt.role==="bas")||(pt.role==="bord"&&pt.side===s);
     const seg=SIDES.map(([s,lab,cls])=>`<button type="button" class="${cls}" data-side="${s}" aria-pressed="${isActive(s)}">${lab}</button>`).join("");
-    row.innerHTML=`<div class="prow-top"><div class="sideseg" data-pid="${pt.id}">${seg}</div><button class="del" data-del="${pt.id}" type="button" aria-label="Supprimer ce point">×</button></div>
+    let segSel="";
+    if(nSeg>1 && pt.role==="bord"){
+      const opts=p.segs.map(sd=>`<option value="${sd.id}" ${(+pt.seg===sd.id)?"selected":""}>Seg ${sd.id}</option>`).join("");
+      segSel=`<select class="segpick" data-pid="${pt.id}" aria-label="Segment du point">${opts}</select>`;
+    }
+    row.innerHTML=`<div class="prow-top"><div class="sideseg" data-pid="${pt.id}">${seg}</div>${segSel}<button class="del" data-del="${pt.id}" type="button" aria-label="Supprimer ce point">×</button></div>
       <div class="xyz"><label><b>X</b><input type="text" inputmode="decimal" data-fld="x" data-pid="${pt.id}" value="${pt.x}" placeholder="1 634 512"></label>
       <label><b>Y</b><input type="text" inputmode="decimal" data-fld="y" data-pid="${pt.id}" value="${pt.y}" placeholder="5 241 088"></label>
       <label><b>Z</b><input type="text" inputmode="decimal" data-fld="z" data-pid="${pt.id}" value="${pt.z}" placeholder="412,84"></label></div>`;
     host.appendChild(row);
+  });
+}
+function renderSegList(){
+  const p=cur(); const host=$("segList"); host.innerHTML="";
+  $("segCount").textContent="("+p.segs.length+")";
+  p.segs.forEach((sd,i)=>{
+    const card=document.createElement("div"); card.className="segcard";
+    card.innerHTML=`<div class="segcard-h">Segment ${sd.id}${p.segs.length>1?` <span>(du haut vers le bas)</span>`:""}</div>
+      <div class="row">
+        <label class="f" style="flex:1 1 90px"><b>Rampe %</b><input type="text" inputmode="decimal" class="sgL" data-sid="${sd.id}" value="${sd.gL}" placeholder="garder"></label>
+        <label class="f" style="flex:1 1 90px"><b>Dévers %</b><input type="text" inputmode="decimal" class="sgT" data-sid="${sd.id}" value="${sd.gT}" placeholder="garder"></label>
+      </div>
+      <div style="margin-top:8px"><b class="eyebrow" style="display:block;margin-bottom:4px;font-size:9px">L'eau file vers</b>
+      <div class="seg two segdir" data-sid="${sd.id}"><button type="button" data-d="int" aria-pressed="${sd.dir==="int"}">intérieur</button><button type="button" data-d="ext" aria-pressed="${sd.dir==="ext"}">extérieur</button></div></div>`;
+    host.appendChild(card);
   });
 }
 function setPointHint(r){
@@ -377,9 +443,7 @@ function setPointHint(r){
 let R=null;
 function recompute(){
   const p=cur();
-  const pts=p.points.map(pt=>({side:pt.role==="haut"||pt.role==="bas"?"int":pt.side,role:pt.role,x:num(pt.x),y:num(pt.y),z:num(pt.z),label:pt.label}));
-  const target={gL:num(p.gL),gT:num(p.gT),dir:p.dir,strat:p.strat};
-  R=analyze(pts,target);
+  R=analyze(currentPts(),p.segs,p.strat);
   render();
 }
 function render(){
@@ -388,7 +452,7 @@ function render(){
     ["scenWrap","planWrap","blockWrap","profWrap","tblWrap"].forEach(hide);
     ["oL","oW","oGL","oGT"].forEach(i=>$(i).textContent="—");
     const v=$("verdict"); v.className="verdict no";
-    v.textContent = R.reason==="need2" ? "Ajoute au moins deux points de bord (intérieur et extérieur) pour lancer le calcul." : "Complète les coordonnées des points.";
+    v.textContent = (R.reason==="need2"||R.reason==="need3") ? "Ajoute au moins trois points de bord (intérieur et extérieur) pour lancer le calcul." : "Complète les coordonnées des points.";
     $("warnBox").hidden=true; return;
   }
   $("oL").textContent=f(R.L,1); $("oW").textContent=f(R.W,2);
@@ -399,22 +463,26 @@ function render(){
   else{$("oGT").textContent="—";$("oGTu").textContent="il manque un côté";}
 
   const v=$("verdict");
-  const tgt=[]; if(R.target.useGL)tgt.push("rampe "+f(num(p.gL),1)+" %"); if(R.target.useGT)tgt.push("dévers "+f(num(p.gT),1)+" % vers "+(p.dir==="int"?"l'intérieur":"l'extérieur"));
-  if(!tgt.length){v.className="verdict no";v.textContent="Saisis une rampe et/ou un dévers voulus pour calculer le terrassement.";}
-  else{v.className="verdict ok";v.textContent="Objectif : "+tgt.join(" · ")+". Résultats ci-dessous pour la stratégie « "+({cut:"déblai seul",fill:"remblai seul",bal:"équilibré"}[p.strat])+" ».";}
+  const ns=p.segs.length;
+  const objs=[];
+  R.segs.forEach((sg,i)=>{const parts=[];
+    if(sg.useGL)parts.push("rampe "+f(num(sg.def.gL),1)+" %");
+    if(sg.useGT)parts.push("dévers "+f(num(sg.def.gT),1)+" % "+(sg.def.dir==="int"?"int":"ext"));
+    if(parts.length)objs.push((ns>1?("S"+sg.id+" : "):"")+parts.join(", "));});
+  if(!objs.length){v.className="verdict no";v.textContent="Saisis une rampe et/ou un dévers voulus (par segment) pour calculer le terrassement.";}
+  else{v.className="verdict ok";v.textContent=(ns>1?"Objectifs par segment — ":"Objectif : ")+objs.join(" · ")+". Stratégie « "+({cut:"déblai seul",fill:"remblai seul",bal:"équilibré"}[p.strat])+" » sur toute la piste.";}
 
   const w=[];
-  if(R.planar&&R.planar.r2<0.9&&R.nBord>=4)w.push("La piste actuelle n'est pas plane (les points s'écartent d'un plan de "+f(R.planar.rmse*100,0)+" cm en moyenne) : le dévers affiché est une moyenne.");
+  if(R.nOut)w.push(R.nOut>1?(R.nOut+" points semblent aberrants (rejetés du calcul, marqués d'une croix en vue en plan) : vérifie leurs coordonnées."):"1 point semble aberrant (rejeté du calcul, marqué d'une croix en vue en plan) : vérifie ses coordonnées.");
+  if(R.planar&&R.planar.r2<0.9&&R.nBord>=4&&R.target.useGL&&ns===1)w.push("Ta piste ondule (écart "+f(R.planar.rmse*100,0)+" cm à une droite) : viser une rampe constante déplacera beaucoup de matière. Laisse la rampe vide pour ne reprendre que le dévers et garder ton profil, ou découpe en segments.");
   if(Math.abs(R.curGL)>12)w.push("Rampe relevée de "+f(Math.abs(R.curGL),0)+" % : vérifie tes points d'axe.");
-  if(R.target.useGL&&num(p.gL)>10)w.push("Une rampe de "+f(num(p.gL),0)+" % est raide pour des tombereaux ; 8 à 10 % est un maxi courant.");
   if(!R.hasAxisPts)w.push("Axe déduit automatiquement : pour une longueur fiable, marque un point AXE ↑ en haut et AXE ↓ en bas.");
   $("warnBox").hidden=!w.length; $("warnBox").textContent=w.join(" ");
 
-  // scénarios : recalcul rapide des 3 volumes
-  const base={gL:num(p.gL),gT:num(p.gT),dir:p.dir};
-  const rc=analyze(currentPts(),{...base,strat:"cut"});
-  const rf=analyze(currentPts(),{...base,strat:"fill"});
-  const rb=analyze(currentPts(),{...base,strat:"bal"});
+  // scénarios : recalcul rapide des 3 volumes (mêmes segments)
+  const rc=analyze(currentPts(),p.segs,"cut");
+  const rf=analyze(currentPts(),p.segs,"fill");
+  const rb=analyze(currentPts(),p.segs,"bal");
   $("vcut").innerHTML = rc.ok? f(rc.vol.cut,1)+' <small>m³ à sortir</small>':"—";
   $("vfill").innerHTML= rf.ok? f(rf.vol.fill,1)+' <small>m³ à apporter</small>':"—";
   $("vbal").innerHTML = rb.ok? f(rb.vol.cut,1)+' <small>m³ ↔ '+f(rb.vol.fill,1)+' m³</small>':"—";
@@ -425,18 +493,20 @@ function render(){
   drawPlan(); drawBlock(); drawProfile(); fillTable();
   saveAll();
 }
-function currentPts(){const p=cur();return p.points.map(pt=>({side:pt.role==="haut"||pt.role==="bas"?"int":pt.side,role:pt.role,x:num(pt.x),y:num(pt.y),z:num(pt.z),label:pt.label}));}
+function currentPts(){const p=cur();return p.points.map(pt=>({side:pt.role==="haut"||pt.role==="bas"?"int":pt.side,role:pt.role,seg:pt.seg||1,x:num(pt.x),y:num(pt.y),z:num(pt.z),label:pt.label}));}
 
 /* ---------- table ---------- */
 function fillTable(){
   const rows=[`<tr><th>Point</th><th>Z actuel</th><th>Z visé</th><th>À faire</th></tr>`];
+  const multi=cur().segs.length>1;
   R.pts.forEach((pt,i)=>{
     const cls=pt.side==="int"?"i":"e";
-    const lab=(pt.role==="haut"?"Axe ↑":pt.role==="bas"?"Axe ↓":pt.side==="int"?"Intérieur":"Extérieur");
+    const lab=(multi?("S"+(pt.seg||1)+" "):"")+(pt.side==="int"?"Intérieur":"Extérieur");
     let act;
-    if(Math.abs(pt.d)<0.005)act='<span style="color:var(--ink3)">au niveau</span>';
+    if(pt.out)act='<span style="color:var(--cut)">⚠ aberrant — ignoré</span>';
+    else if(Math.abs(pt.d)<0.005)act='<span style="color:var(--ink3)">au niveau</span>';
     else act=pt.d>0?`<span class="dcut">↓ raboter ${cm(pt.d)}</span>`:`<span class="dfill">↑ recharger ${cm(pt.d)}</span>`;
-    rows.push(`<tr><td><span class="tag ${cls}"></span>${lab} ${i+1}</td><td>${fz(pt.z)}</td><td>${fz(pt.tz)}</td><td>${act}</td></tr>`);
+    rows.push(`<tr${pt.out?' style="opacity:.55"':''}><td><span class="tag ${cls}"></span>${lab} ${i+1}</td><td>${fz(pt.z)}</td><td>${pt.out?'—':fz(pt.tz)}</td><td>${act}</td></tr>`);
   });
   $("resTbl").innerHTML=rows.join("");
 }
@@ -444,35 +514,83 @@ function fillTable(){
 /* ---------- vue en plan ---------- */
 function setupCanvas(cv,cssH){const dpr=Math.min(devicePixelRatio||1,2.5);const w=cv.clientWidth||640;
   cv.width=w*dpr;cv.height=cssH*dpr;const ctx=cv.getContext("2d");ctx.setTransform(dpr,0,0,dpr,0,0);return{ctx,w,h:cssH};}
+/* ---------- projection CC46 -> lon/lat -> mercator (pour fond satellite) ---------- */
+const _D=Math.PI/180,_a=6378137,_e=Math.sqrt(0.00669438002290);
+const _phi0=46*_D,_lam0=3*_D,_phi1=45.25*_D,_phi2=46.75*_D,_FE=1700000,_FN=5200000;
+const _mf=p=>Math.cos(p)/Math.sqrt(1-_e*_e*Math.sin(p)**2);
+const _tf=p=>Math.tan(Math.PI/4-p/2)/Math.pow((1-_e*Math.sin(p))/(1+_e*Math.sin(p)),_e/2);
+const _n=(Math.log(_mf(_phi1))-Math.log(_mf(_phi2)))/(Math.log(_tf(_phi1))-Math.log(_tf(_phi2)));
+const _F=_mf(_phi1)/(_n*Math.pow(_tf(_phi1),_n));
+const _rho0=_a*_F*Math.pow(_tf(_phi0),_n);
+function cc46ToLonLat(X,Y){const dx=X-_FE,dy=Y-_FN;const rho=Math.sign(_n)*Math.sqrt(dx*dx+(_rho0-dy)**2);
+  const tt=Math.pow(rho/(_a*_F),1/_n);let phi=Math.PI/2-2*Math.atan(tt);
+  for(let i=0;i<8;i++)phi=Math.PI/2-2*Math.atan(tt*Math.pow((1-_e*Math.sin(phi))/(1+_e*Math.sin(phi)),_e/2));
+  return[(_lam0+Math.atan2(dx,_rho0-dy)/_n)/_D, phi/_D];}
+function cc46ToWorld(x,y){const ll=cc46ToLonLat(x,y);const s=Math.sin(ll[1]*_D);return[(ll[0]+180)/360,0.5-Math.log((1+s)/(1-s))/(4*Math.PI)];}
+let satOn=false, satSrc="ign"; const tileCache=new Map();
+function tileURL(z,x,y){return satSrc==="esri"
+  ? `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`
+  : `https://data.geopf.fr/wmts?SERVICE=WMTS&VERSION=1.0.0&REQUEST=GetTile&LAYER=ORTHOIMAGERY.ORTHOPHOTOS&STYLE=normal&FORMAT=image/jpeg&TILEMATRIXSET=PM&TILEMATRIX=${z}&TILEROW=${y}&TILECOL=${x}`;}
+function getTile(url,onready){let im=tileCache.get(url);if(im)return im;
+  im=new Image();im.crossOrigin="anonymous";im.onload=()=>onready&&onready();im.onerror=()=>{};im.src=url;tileCache.set(url,im);return im;}
+let planTimer=null; function schedulePlan(){clearTimeout(planTimer);planTimer=setTimeout(()=>{if(R&&R.ok)drawPlan();},70);}
+
 function drawPlan(){
   const cv=$("plan"); const {ctx,w,h}=setupCanvas(cv,360);
   ctx.clearRect(0,0,w,h);
   const pts=currentPts().filter(p=>isFinite(p.x)&&isFinite(p.y));
   if(pts.length<2)return;
-  const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
-  const xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
-  const pad=34; const spanX=Math.max(xMax-xMin,1),spanY=Math.max(yMax-yMin,1);
-  const s=Math.min((w-2*pad)/spanX,(h-2*pad)/spanY);
-  const cx=x=>pad+(x-xMin)*s+((w-2*pad)-spanX*s)/2, cy=y=>h-pad-((y-yMin)*s)-((h-2*pad)-spanY*s)/2;
-  // axe
-  if(R.ok){const o=R.o,d=R.d;const a=[o[0]+d[0]*R.uMin,o[1]+d[1]*R.uMin],b=[o[0]+d[0]*R.uMax,o[1]+d[1]*R.uMax];
-    ctx.strokeStyle="#C4CCD2";ctx.lineWidth=1.5;ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(cx(a[0]),cy(a[1]));ctx.lineTo(cx(b[0]),cy(b[1]));ctx.stroke();ctx.setLineDash([]);
-    ctx.fillStyle="#9AA4AC";ctx.font="700 10px "+gf();ctx.fillText("AXE",cx((a[0]+b[0])/2)+6,cy((a[1]+b[1])/2)-6);}
-  // rails reliés
-  ["int","ext"].forEach(side=>{
-    const rail=pts.filter(p=>p.side===side&&p.role==="bord").map(p=>({p,u:R.ok?((p.x-R.o[0])*R.d[0]+(p.y-R.o[1])*R.d[1]):p.x})).sort((a,b)=>a.u-b.u);
-    if(rail.length>=2){ctx.strokeStyle=side==="int"?"#E7C4AC":"#AAC9DC";ctx.lineWidth=2;ctx.beginPath();
-      rail.forEach((r,i)=>{const X=cx(r.p.x),Y=cy(r.p.y);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.stroke();}
-  });
+  const pad=34; const sat=satOn&&navigator.onLine;
+  let toScreen, metersPerPx;
+  if(sat){
+    const Wd=pts.map(p=>cc46ToWorld(p.x,p.y));
+    let wxMin=Math.min(...Wd.map(p=>p[0])),wxMax=Math.max(...Wd.map(p=>p[0])),wyMin=Math.min(...Wd.map(p=>p[1])),wyMax=Math.max(...Wd.map(p=>p[1]));
+    const mx=(wxMax-wxMin)*0.12||1e-6,my=(wyMax-wyMin)*0.12||1e-6; wxMin-=mx;wxMax+=mx;wyMin-=my;wyMax+=my;
+    const spanWx=wxMax-wxMin,spanWy=wyMax-wyMin;
+    const scale=Math.min((w-2*pad)/spanWx,(h-2*pad)/spanWy);
+    const offX=pad+((w-2*pad)-spanWx*scale)/2, offY=pad+((h-2*pad)-spanWy*scale)/2;
+    const SX=wx=>offX+(wx-wxMin)*scale, SY=wy=>offY+(wy-wyMin)*scale;
+    toScreen=(x,y)=>{const c=cc46ToWorld(x,y);return[SX(c[0]),SY(c[1])];};
+    let z=Math.round(Math.log2(scale/256)); z=Math.max(15,Math.min(21,z)); const N=Math.pow(2,z);
+    const txMin=Math.floor(wxMin*N),txMax=Math.floor(wxMax*N),tyMin=Math.floor(wyMin*N),tyMax=Math.floor(wyMax*N);
+    const tsz=(1/N)*scale;
+    ctx.save();ctx.beginPath();ctx.rect(0,0,w,h);ctx.clip();
+    ctx.fillStyle="#2B3138";ctx.fillRect(0,0,w,h);
+    for(let tx=txMin;tx<=txMax;tx++)for(let ty=tyMin;ty<=tyMax;ty++){if(tx<0||ty<0||tx>=N||ty>=N)continue;
+      const im=getTile(tileURL(z,tx,ty),schedulePlan);
+      if(im.complete&&im.naturalWidth)ctx.drawImage(im,SX(tx/N),SY(ty/N),tsz+1,tsz+1);}
+    ctx.restore();
+    const latMid=cc46ToLonLat((Math.min(...pts.map(p=>p.x))+Math.max(...pts.map(p=>p.x)))/2,(Math.min(...pts.map(p=>p.y))+Math.max(...pts.map(p=>p.y)))/2)[1];
+    metersPerPx=(1/scale)*40075016.686*Math.cos(latMid*_D);
+  } else {
+    const xs=pts.map(p=>p.x),ys=pts.map(p=>p.y);
+    const xMin=Math.min(...xs),xMax=Math.max(...xs),yMin=Math.min(...ys),yMax=Math.max(...ys);
+    const spanX=Math.max(xMax-xMin,1),spanY=Math.max(yMax-yMin,1);
+    const s=Math.min((w-2*pad)/spanX,(h-2*pad)/spanY);
+    toScreen=(x,y)=>[pad+(x-xMin)*s+((w-2*pad)-spanX*s)/2, h-pad-((y-yMin)*s)-((h-2*pad)-spanY*s)/2];
+    metersPerPx=1/s;
+  }
+  const outSet=new Set((R.ok?R.pts:[]).filter(p=>p.out).map(p=>p.x+"|"+p.y+"|"+p.z));
+  // médiane
+  if(R.ok&&R.M&&R.M.length>=2){ctx.strokeStyle=sat?"rgba(255,255,255,.9)":"#C4CCD2";ctx.lineWidth=sat?2.5:1.5;ctx.setLineDash([7,5]);ctx.beginPath();
+    R.M.forEach((m,i)=>{const P=toScreen(m.x,m.y);i?ctx.lineTo(P[0],P[1]):ctx.moveTo(P[0],P[1]);});ctx.stroke();ctx.setLineDash([]);
+    const mm=R.M[Math.floor(R.M.length/2)],P=toScreen(mm.x,mm.y);ctx.fillStyle=sat?"#fff":"#9AA4AC";ctx.font="700 10px "+gf();ctx.fillText("AXE",P[0]+6,P[1]-6);}
+  // rails
+  ["int","ext"].forEach(side=>{const rail=pts.filter(p=>p.side===side&&p.role==="bord"&&!outSet.has(p.x+"|"+p.y+"|"+p.z));if(rail.length<2)return;
+    if(sat){ctx.strokeStyle="rgba(0,0,0,.4)";ctx.lineWidth=4.5;ctx.beginPath();rail.forEach((p,i)=>{const P=toScreen(p.x,p.y);i?ctx.lineTo(P[0],P[1]):ctx.moveTo(P[0],P[1]);});ctx.stroke();}
+    ctx.strokeStyle=side==="int"?(sat?"#F59B4B":"#E7C4AC"):(sat?"#57B4E8":"#AAC9DC");ctx.lineWidth=sat?2.4:2;ctx.beginPath();
+    rail.forEach((p,i)=>{const P=toScreen(p.x,p.y);i?ctx.lineTo(P[0],P[1]):ctx.moveTo(P[0],P[1]);});ctx.stroke();});
   // points
-  pts.forEach(p=>{const X=cx(p.x),Y=cy(p.y);const col=p.role==="haut"||p.role==="bas"?"#14181C":(p.side==="int"?"#B8560F":"#0B6FA4");
-    ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,p.role==="haut"||p.role==="bas"?6:5,0,7);ctx.fill();
-    if(p.role==="haut"||p.role==="bas"){ctx.fillStyle="#fff";ctx.font="700 8px "+gf();ctx.textAlign="center";ctx.fillText(p.role==="haut"?"H":"B",X,Y+3);ctx.textAlign="left";}});
+  pts.forEach(p=>{const P=toScreen(p.x,p.y),X=P[0],Y=P[1];const isAxe=p.role==="haut"||p.role==="bas";const isOut=outSet.has(p.x+"|"+p.y+"|"+p.z);
+    if(isOut){ctx.strokeStyle="#E24E10";ctx.lineWidth=2.5;ctx.beginPath();ctx.arc(X,Y,7,0,7);ctx.stroke();ctx.beginPath();ctx.moveTo(X-4,Y-4);ctx.lineTo(X+4,Y+4);ctx.moveTo(X+4,Y-4);ctx.lineTo(X-4,Y+4);ctx.stroke();return;}
+    const col=isAxe?"#14181C":(p.side==="int"?"#B8560F":"#0B6FA4");ctx.fillStyle=col;ctx.beginPath();ctx.arc(X,Y,isAxe?6:5,0,7);ctx.fill();
+    if(sat){ctx.strokeStyle="#fff";ctx.lineWidth=1.5;ctx.stroke();}
+    if(isAxe){ctx.fillStyle="#fff";ctx.font="700 8px "+gf();ctx.textAlign="center";ctx.fillText(p.role==="haut"?"H":"B",X,Y+3);ctx.textAlign="left";}});
   // échelle
-  const bar=niceLen(spanX*0.4); const px=bar*s;
-  ctx.strokeStyle="#5A646E";ctx.lineWidth=1.4;ctx.beginPath();ctx.moveTo(pad,h-14);ctx.lineTo(pad+px,h-14);ctx.stroke();
-  ctx.fillStyle="#5A646E";ctx.font="11px "+gf();ctx.fillText(f(bar,0)+" m",pad+px+6,h-11);
-  $("planScale").textContent="emprise "+f(spanX,0)+" × "+f(spanY,0)+" m";
+  const bar=niceLen(metersPerPx*(w-2*pad)*0.4),px=bar/metersPerPx;
+  ctx.strokeStyle=sat?"#fff":"#5A646E";ctx.lineWidth=sat?2.5:1.4;ctx.beginPath();ctx.moveTo(pad,h-14);ctx.lineTo(pad+px,h-14);ctx.stroke();
+  ctx.fillStyle=sat?"#fff":"#5A646E";ctx.font="700 11px "+gf();ctx.fillText(f(bar,0)+" m",pad+px+6,h-11);
+  $("planScale").textContent = satOn ? (navigator.onLine ? (satSrc==="esri"?"Esri satellite · en ligne":"IGN ortho · en ligne") : "fond hors ligne") : "vue schématique";
 }
 function niceLen(x){const p=Math.pow(10,Math.floor(Math.log10(x)));const n=x/p;return (n<1.5?1:n<3.5?2:n<7.5?5:10)*p;}
 function gf(){return getComputedStyle(document.body).getPropertyValue("--font-ui");}
@@ -484,78 +602,124 @@ function rot(pt){ // pt {x,y,z} centrés -> {sx,sy,depth}
   let y2=y*Math.cos(pitch)-z*Math.sin(pitch), z2=y*Math.sin(pitch)+z*Math.cos(pitch);
   return{x, y:y2, z:z2};
 }
+function blockH(){return (document.fullscreenElement===$("blockWrap")) ? Math.max(360, (window.innerHeight||600)-190) : 420;}
 function drawBlock(){
-  const cv=$("block"); const {ctx,w,h}=setupCanvas(cv,420);
+  const cv=$("block"); const {ctx,w,h}=setupCanvas(cv,blockH());
   ctx.clearRect(0,0,w,h);
-  // rails appariés par station
-  const int=R.ok?R.pts.filter(p=>p.side==="int").sort((a,b)=>a.u-b.u):[];
-  const ext=R.ok?R.pts.filter(p=>p.side==="ext").sort((a,b)=>a.u-b.u):[];
+  blockPick=[];
+  const int=R.ok?R.pts.filter(p=>p.side==="int"&&!p.out).sort((a,b)=>a.u-b.u):[];
+  const ext=R.ok?R.pts.filter(p=>p.side==="ext"&&!p.out).sort((a,b)=>a.u-b.u):[];
   if(!R.ok||int.length<2||ext.length<2){ctx.fillStyle="#9AA4AC";ctx.font="12px "+gf();
     ctx.fillText("Ajoute au moins deux points sur chaque rive pour voir le bloc.",14,26);return;}
   const nS=Math.min(int.length,ext.length);
   const pick=(arr,k)=>arr[Math.round(k*(arr.length-1)/(nS-1))];
-  // nœuds de la grille : station k -> {int, ext} avec u,v,z,tz
   const stat=[]; for(let k=0;k<nS;k++)stat.push({i:pick(int,k),e:pick(ext,k)});
-
+  const mode=view3d.mode||"cmp"; // avant | cmp | apres
+  const topZ=p=>mode==="apres"?p.tz:p.z;              // surface affichée
   const uc=(R.uMin+R.uMax)/2, vc=(R.vMin+R.vMax)/2;
   const zAll=R.pts.map(p=>p.z).concat(R.pts.map(p=>p.tz));
   const zMin=Math.min(...zAll), zMax=Math.max(...zAll), zc=(zMin+zMax)/2;
-  const exag=view3d.exag;
-  const zFloor=zMin-Math.max((zMax-zMin)*0.5,0.4); // plancher du bloc
-  // projection brute (sans échelle) : x écran, y écran, profondeur
-  const raw=(u,v,z)=>{const m=rot({x:u-uc,y:v-vc,z:(z-zc)*exag});return{rx:m.x,ry:-m.z,depth:m.y};};
-  // passe 1 : bbox sur les points extrêmes (terrain, cible, plancher)
+  const exag=view3d.exag, thick=Math.max(0.5,(zMax-zMin)*0.12); // dalle épaisseur ~constante
+  const exH=view3d.exagH||1;
+  const raw=(u,v,z)=>{const m=rot({x:u-uc,y:(v-vc)*exH,z:(z-zc)*exag});return{rx:m.x,ry:-m.z,depth:m.y};};
   let xmin=1e9,xmax=-1e9,ymin=1e9,ymax=-1e9;
-  stat.forEach(st=>[st.i,st.e].forEach(p=>[p.z,p.tz,zFloor].forEach(z=>{const r=raw(p.u,p.v,z);
+  stat.forEach(st=>[st.i,st.e].forEach(p=>[topZ(p),topZ(p)-thick].forEach(z=>{const r=raw(p.u,p.v,z);
     xmin=Math.min(xmin,r.rx);xmax=Math.max(xmax,r.rx);ymin=Math.min(ymin,r.ry);ymax=Math.max(ymax,r.ry);})));
   const bw=Math.max(xmax-xmin,1e-3), bh=Math.max(ymax-ymin,1e-3);
   const fit=Math.min((w-40)/bw,(h-52)/bh); const bcx=(xmin+xmax)/2, bcy=(ymin+ymax)/2;
   const cx=w/2, cy=h/2;
   const S=(u,v,z)=>{const r=raw(u,v,z);return{x:cx+(r.rx-bcx)*fit,y:cy+(r.ry-bcy)*fit,depth:r.depth};};
-  const colorFor=d=>{const m=Math.min(Math.abs(d)/0.25,1);
-    return d>0.006?mix("#E24E10",m):d<-0.006?mix("#0B6FA4",m):"#E4E9EC";};
+  const colorFor=d=>{const m=Math.min(Math.abs(d)/0.25,1);return d>0.006?mix("#E24E10",m):d<-0.006?mix("#0B6FA4",m):"#E4E9EC";};
+  const bilerp=(A,B,C,D,s,t,key)=>{const iS=A[key]+(B[key]-A[key])*s,eS=D[key]+(C[key]-D[key])*s;return iS+(eS-iS)*t;};
   const faces=[];
-  const bilerp=(A,B,C,D,s,t,key)=>{ // A=int_k B=int_{k+1} C=ext_{k+1} D=ext_k
-    const iSide=A[key]+(B[key]-A[key])*s, eSide=D[key]+(C[key]-D[key])*s;
-    return iSide+(eSide-iSide)*t;};
-  const NT=6, NLS=3; // subdivisions travers / long -> surface lisse
+  const NT=6, NLS=3;
   for(let k=0;k<nS-1;k++){
     const A=stat[k].i,B=stat[k+1].i,C=stat[k+1].e,D=stat[k].e;
     for(let a=0;a<NLS;a++)for(let b=0;b<NT;b++){
       const s0=a/NLS,s1=(a+1)/NLS,t0=b/NT,t1=(b+1)/NT;
-      const corners=[[s0,t0],[s1,t0],[s1,t1],[s0,t1]];
-      const P=corners.map(([s,t])=>S(bilerp(A,B,C,D,s,t,"u"),bilerp(A,B,C,D,s,t,"v"),bilerp(A,B,C,D,s,t,"z")));
+      const P=[[s0,t0],[s1,t0],[s1,t1],[s0,t1]].map(([s,t])=>{
+        const zt=mode==="apres"?bilerp(A,B,C,D,s,t,"tz"):bilerp(A,B,C,D,s,t,"z");
+        return S(bilerp(A,B,C,D,s,t,"u"),bilerp(A,B,C,D,s,t,"v"),zt);});
       const sc=(s0+s1)/2,tc=(t0+t1)/2;
-      const zc2=bilerp(A,B,C,D,sc,tc,"z"),tzc=bilerp(A,B,C,D,sc,tc,"tz");
-      faces.push({P,depth:mean(P.map(p=>p.depth)),fill:colorFor(zc2-tzc),stroke:"rgba(20,24,28,.06)",w:.5});
+      let fill;
+      if(mode==="cmp") fill=colorFor(bilerp(A,B,C,D,sc,tc,"z")-bilerp(A,B,C,D,sc,tc,"tz"));
+      else fill=mode==="apres"?"#DCE7DE":"#D9CDB8";
+      faces.push({P,depth:mean(P.map(p=>p.depth)),fill,stroke:"rgba(20,24,28,.06)",w:.5});
     }
   }
-  // parois (jupe) : contour terrain -> plancher
-  const contour=[];
-  for(let k=0;k<nS;k++)contour.push(stat[k].i);
-  for(let k=nS-1;k>=0;k--)contour.push(stat[k].e);
-  for(let k=0;k<contour.length;k++){
-    const a=contour[k],b=contour[(k+1)%contour.length];
-    const P=[S(a.u,a.v,a.z),S(b.u,b.v,b.z),S(b.u,b.v,zFloor),S(a.u,a.v,zFloor)];
-    faces.push({P,depth:mean(P.map(p=>p.depth))+.01,fill:"#C9BBA6",stroke:"rgba(20,24,28,.18)",w:.6});
-  }
-  // plancher
-  {const cpts=contour.map(a=>S(a.u,a.v,zFloor));faces.push({P:cpts,depth:Math.min(...cpts.map(p=>p.depth))-.02,fill:"#B7A78E",stroke:"rgba(20,24,28,.15)",w:.6});}
-  // plan visé (vert translucide) par quad de station
-  for(let k=0;k<nS-1;k++){const A=stat[k].i,B=stat[k+1].i,C=stat[k+1].e,D=stat[k].e;
+  // dalle : parois + dessous suivent la surface (épaisseur constante)
+  const contour=[]; for(let k=0;k<nS;k++)contour.push(stat[k].i); for(let k=nS-1;k>=0;k--)contour.push(stat[k].e);
+  for(let k=0;k<contour.length;k++){const a=contour[k],b=contour[(k+1)%contour.length];
+    const P=[S(a.u,a.v,topZ(a)),S(b.u,b.v,topZ(b)),S(b.u,b.v,topZ(b)-thick),S(a.u,a.v,topZ(a)-thick)];
+    faces.push({P,depth:mean(P.map(p=>p.depth))+.01,fill:"#C9BBA6",stroke:"rgba(20,24,28,.18)",w:.6});}
+  {const cpts=contour.map(a=>S(a.u,a.v,topZ(a)-thick));faces.push({P:cpts,depth:Math.min(...cpts.map(p=>p.depth))-.02,fill:"#BCAC93",stroke:"rgba(20,24,28,.15)",w:.6});}
+  // plan visé (uniquement en comparaison)
+  if(mode==="cmp") for(let k=0;k<nS-1;k++){const A=stat[k].i,B=stat[k+1].i,C=stat[k+1].e,D=stat[k].e;
     const P=[S(A.u,A.v,A.tz),S(B.u,B.v,B.tz),S(C.u,C.v,C.tz),S(D.u,D.v,D.tz)];
-    faces.push({P,depth:mean(P.map(p=>p.depth))+.02,fill:"rgba(21,127,75,.13)",stroke:"rgba(21,127,75,.85)",dash:[6,4],w:1.3,green:true});}
+    faces.push({P,depth:mean(P.map(p=>p.depth))+.02,fill:"rgba(21,127,75,.13)",stroke:"rgba(21,127,75,.85)",dash:[6,4],w:1.3});}
   faces.sort((a,b)=>b.depth-a.depth);
   faces.forEach(fc=>{ctx.beginPath();fc.P.forEach((p,i)=>i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y));ctx.closePath();
     ctx.fillStyle=fc.fill;ctx.fill();ctx.setLineDash(fc.dash||[]);ctx.strokeStyle=fc.stroke;ctx.lineWidth=fc.w;ctx.stroke();ctx.setLineDash([]);});
-  // repères HAUT / BAS
-  ctx.font="700 11px "+gf();
-  const hp=S(stat[0].i.u,(stat[0].i.v+stat[0].e.v)/2,stat[0].i.z);
-  const bp=S(stat[nS-1].i.u,(stat[nS-1].i.v+stat[nS-1].e.v)/2,stat[nS-1].i.z);
-  ctx.fillStyle="#5A646E";ctx.fillText("HAUT",hp.x-10,hp.y-8);ctx.fillText("BAS",bp.x-6,bp.y-8);
+
+  // ---- flèches d'écoulement de l'eau, une par segment (rampe + dévers du tronçon) ----
+  const arrTop=stat.map(st=>({u:(st.i.u+st.e.u)/2,z:(st.i.z+st.e.z)/2,tz:(st.i.tz+st.e.tz)/2})).sort((a,b)=>a.u-b.u);
+  const useTz=mode==="apres";
+  const zSurf=u=>{if(!arrTop.length)return 0;if(u<=arrTop[0].u)return useTz?arrTop[0].tz:arrTop[0].z;
+    if(u>=arrTop[arrTop.length-1].u)return useTz?arrTop[arrTop.length-1].tz:arrTop[arrTop.length-1].z;
+    for(let i=1;i<arrTop.length;i++)if(u<=arrTop[i].u){const t=(u-arrTop[i-1].u)/((arrTop[i].u-arrTop[i-1].u)||1);
+      const a=useTz?arrTop[i-1].tz:arrTop[i-1].z,b=useTz?arrTop[i].tz:arrTop[i].z;return a+(b-a)*t;}return 0;};
+  const zf=(u,v)=>zSurf(u);
+  (R.segs||[]).forEach(sg=>{
+    const gradU=mode==="avant"?sg.curCu:sg.slope, gradV=mode==="avant"?sg.curCv:sg.tv;
+    const gm=Math.hypot(gradU,gradV); if(gm<1e-4)return;
+    const fu=-gradU/gm, fv=-gradV/gm;
+    const mu=Math.max(R.uMin,Math.min(R.uMax,(sg.start+sg.end)/2));
+    const len=Math.min(R.W*0.5,(sg.end-sg.start)*0.5,6);
+    arrow(mu-fu*len/2, -fv*len/2, fu,fv, len, zf, S, ctx);
+  });
+  // ---- repères HAUT / BAS / INT / EXT ----
+  ctx.font="700 11px "+gf(); ctx.fillStyle="#5A646E";
+  const mid=Math.floor((nS-1)/2);
+  const put=(u,v,txt,dx,dy)=>{const p=S(u,v,zf(u,v));ctx.fillText(txt,p.x+dx,p.y+dy);};
+  put(stat[0].i.u,(stat[0].i.v+stat[0].e.v)/2,"HAUT",-12,-8);
+  put(stat[nS-1].i.u,(stat[nS-1].i.v+stat[nS-1].e.v)/2,"BAS",-6,-8);
+  ctx.fillStyle="#B8560F"; put(stat[mid].i.u,stat[mid].i.v,"INT.",6,4);
+  ctx.fillStyle="#0B6FA4"; put(stat[mid].e.u,stat[mid].e.v,"EXT.",6,4);
+  // points cliquables (sur la surface affichée)
+  R.pts.filter(p=>!p.out).forEach((p,idx)=>{const sp=S(p.u,p.v,mode==="apres"?p.tz:p.z);blockPick.push({x:sp.x,y:sp.y,p,idx});});
+  // bulle du point sélectionné
+  if(blockSel!=null){const bp=blockPick.find(o=>o.idx===blockSel);
+    if(bp){const p=bp.p;ctx.fillStyle="#14181C";ctx.strokeStyle="#fff";ctx.lineWidth=2;
+      ctx.beginPath();ctx.arc(bp.x,bp.y,5,0,7);ctx.fill();ctx.stroke();
+      const lab=(p.side==="int"?"Intérieur":"Extérieur");
+      let act=Math.abs(p.d)<0.005?"au niveau":(p.d>0?"raboter "+cm(p.d):"recharger "+cm(p.d));
+      const txt1=lab, txt2=act, txt3="visé "+fz(p.tz);
+      ctx.font="700 12px "+gf();const tw=Math.max(ctx.measureText(txt1).width,ctx.measureText(txt2).width,ctx.measureText(txt3).width)+16;
+      let bx=bp.x+10, by=bp.y-56; if(bx+tw>w)bx=bp.x-10-tw; if(by<4)by=bp.y+12;
+      ctx.fillStyle="rgba(20,24,28,.92)";roundRect(ctx,bx,by,tw,50,6);ctx.fill();
+      ctx.fillStyle="#fff";ctx.font="700 12px "+gf();ctx.fillText(txt1,bx+8,by+16);
+      ctx.fillStyle=p.d>0?"#FF8A5B":(p.d<0?"#7FC0E8":"#cfd6db");ctx.font="700 12px "+gf();ctx.fillText(txt2,bx+8,by+31);
+      ctx.fillStyle="#9AA4AC";ctx.font="11px "+gf();ctx.fillText(txt3,bx+8,by+45);}}
 }
-function mix(hex,t){ // vers le blanc quand t petit
-  const c=parseInt(hex.slice(1),16),r=c>>16,g=c>>8&255,b=c&255;const k=0.30+0.70*t;
+function roundRect(ctx,x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+function arrow(u0,v0,dU,dV,len,zf,S,ctx){
+  const a=S(u0,v0,zf(u0,v0)), b=S(u0+dU*len,v0+dV*len,zf(u0+dU*len,v0+dV*len));
+  // halo blanc
+  ctx.lineCap="round";
+  ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=5.5;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  ctx.strokeStyle="#1273C7";ctx.fillStyle="#1273C7";ctx.lineWidth=2.6;
+  ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+  const ang=Math.atan2(b.y-a.y,b.x-a.x),hl=9;
+  ctx.beginPath();ctx.moveTo(b.x,b.y);
+  ctx.lineTo(b.x-hl*Math.cos(ang-0.42),b.y-hl*Math.sin(ang-0.42));
+  ctx.lineTo(b.x-hl*Math.cos(ang+0.42),b.y-hl*Math.sin(ang+0.42));
+  ctx.closePath();
+  ctx.strokeStyle="rgba(255,255,255,.9)";ctx.lineWidth=2.5;ctx.stroke();
+  ctx.fillStyle="#1273C7";ctx.fill();
+  ctx.lineCap="butt";
+}
+function mix(hex,t){const c=parseInt(hex.slice(1),16),r=c>>16,g=c>>8&255,b=c&255;const k=0.30+0.70*t;
   const m=x=>Math.round(255-(255-x)*k);return `rgb(${m(r)},${m(g)},${m(b)})`;}
 
 /* ---------- profil en long ---------- */
@@ -565,8 +729,10 @@ function drawProfile(){
   if(!R.ok)return;
   const pad={l:52,r:16,t:20,b:34};
   const pw=w-pad.l-pad.r, ph=h-pad.t-pad.b;
-  const pts=R.pts.slice().sort((a,b)=>a.u-b.u);
-  const zAll=pts.map(p=>p.z).concat(pts.map(p=>p.tz));
+  const pts=R.pts.filter(p=>!p.out).slice().sort((a,b)=>a.u-b.u);
+  // cible d'axe : tz ramené à l'axe (on retire la composante dévers tv*v) -> profil visé le long de u
+  const tgtAxis=pts.map(p=>({u:p.u, z:p.tz - (p.tv||0)*p.v}));
+  const zAll=pts.map(p=>p.z).concat(tgtAxis.map(p=>p.z));
   const zMin=Math.min(...zAll),zMax=Math.max(...zAll),zSpan=Math.max(zMax-zMin,0.1);
   const X=u=>pad.l+(u-R.uMin)/Math.max(R.uMax-R.uMin,0.1)*pw;
   const Y=z=>pad.t+(zMax-z)/zSpan*ph;
@@ -574,11 +740,9 @@ function drawProfile(){
   ctx.strokeStyle="#EDF0F2";ctx.lineWidth=1;
   for(let i=0;i<=4;i++){const y=pad.t+ph*i/4;ctx.beginPath();ctx.moveTo(pad.l,y);ctx.lineTo(w-pad.r,y);ctx.stroke();
     ctx.fillStyle="#9AA4AC";ctx.font="10px "+gf();ctx.textAlign="right";ctx.fillText(fz(zMax-zSpan*i/4),pad.l-6,y+3);ctx.textAlign="left";}
-  // profil visé (moyenne sur v -> ligne le long de u au v moyen)
-  const vMid=(R.vMin+R.vMax)/2;
+  // profil visé (axe) : suit la cible réelle (droite si rampe imposée, profil conservé sinon)
   ctx.strokeStyle="#157F4B";ctx.lineWidth=2.2;ctx.setLineDash([8,5]);ctx.beginPath();
-  ctx.moveTo(X(R.uMin),Y(R.target.z0+R.target.tu*R.uMin+R.target.tv*vMid));
-  ctx.lineTo(X(R.uMax),Y(R.target.z0+R.target.tu*R.uMax+R.target.tv*vMid));ctx.stroke();ctx.setLineDash([]);
+  tgtAxis.forEach((p,i)=>{i?ctx.lineTo(X(p.u),Y(p.z)):ctx.moveTo(X(p.u),Y(p.z));});ctx.stroke();ctx.setLineDash([]);
   // nuage actuel : points + ligne moyenne par rail
   ["int","ext"].forEach(side=>{const rail=pts.filter(p=>p.side===side);if(rail.length<2)return;
     ctx.strokeStyle=side==="int"?"#E7C4AC":"#AAC9DC";ctx.lineWidth=1.5;ctx.beginPath();
@@ -590,6 +754,7 @@ function drawProfile(){
 
 /* ===================== interactions ===================== */
 $("pointList").addEventListener("input",e=>{const pid=e.target.dataset.pid,fld=e.target.dataset.fld;
+  if(e.target.classList.contains("segpick")){const pt=cur().points.find(x=>x.id===e.target.dataset.pid);if(pt){pt.seg=+e.target.value;recompute();}return;}
   if(!pid||!fld)return;const pt=cur().points.find(x=>x.id===pid);if(pt){pt[fld]=e.target.value;recompute();}});
 $("pointList").addEventListener("click",e=>{
   const seg=e.target.closest(".sideseg"); 
@@ -606,25 +771,47 @@ $("addPt").addEventListener("click",()=>{const p=cur();
   p.points.push(blankPoint(nInt<=nExt?"int":"ext"));renderPointList();setPointHint();recompute();});
 
 function bindTarget(){
-  $("gL").addEventListener("input",e=>{cur().gL=e.target.value;recompute();});
-  $("gT").addEventListener("input",e=>{cur().gT=e.target.value;recompute();});
-  $("dirIn").addEventListener("click",()=>{cur().dir="int";syncDir();recompute();});
-  $("dirOut").addEventListener("click",()=>{cur().dir="ext";syncDir();recompute();});
-  document.querySelectorAll(".seg.three button").forEach(b=>b.addEventListener("click",()=>{cur().strat=b.dataset.s;syncStrat();recompute();}));
+  document.querySelectorAll("#stratSeg button").forEach(b=>b.addEventListener("click",()=>{cur().strat=b.dataset.s;syncStrat();recompute();}));
   document.querySelectorAll(".scen .card").forEach(c=>c.addEventListener("click",()=>{cur().strat=c.dataset.s;syncStrat();recompute();}));
+  $("segPlus").addEventListener("click",()=>{const p=cur();if(p.segs.length>=6)return;
+    const id=Math.max(...p.segs.map(s=>s.id))+1;p.segs.push({id,gL:"",gT:"",dir:"int"});renderSegList();renderPointList();setPointHint();recompute();});
+  $("segMinus").addEventListener("click",()=>{const p=cur();if(p.segs.length<=1)return;
+    const gone=p.segs.pop();p.points.forEach(pt=>{if(+pt.seg===gone.id)pt.seg=p.segs[p.segs.length-1].id;});renderSegList();renderPointList();setPointHint();recompute();});
+  $("segList").addEventListener("input",e=>{const sid=+e.target.dataset.sid;if(!sid)return;const sd=cur().segs.find(s=>s.id===sid);if(!sd)return;
+    if(e.target.classList.contains("sgL"))sd.gL=e.target.value;else if(e.target.classList.contains("sgT"))sd.gT=e.target.value;recompute();});
+  $("segList").addEventListener("click",e=>{const dir=e.target.dataset.d;if(!dir)return;const sid=+e.target.closest(".segdir").dataset.sid;
+    const sd=cur().segs.find(s=>s.id===sid);if(sd){sd.dir=dir;e.target.closest(".segdir").querySelectorAll("button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.d===dir));recompute();}});
 }
-function syncDir(){$("dirIn").setAttribute("aria-pressed",cur().dir==="int");$("dirOut").setAttribute("aria-pressed",cur().dir==="ext");}
-function syncStrat(){document.querySelectorAll(".seg.three button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===cur().strat));}
-function syncTargetInputs(){$("gL").value=cur().gL;$("gT").value=cur().gT;syncDir();syncStrat();}
+function syncStrat(){document.querySelectorAll("#stratSeg button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.s===cur().strat));}
+function syncTargetInputs(){renderSegList();syncStrat();}
 
-/* 3D drag */
-(function(){const cv=$("block");let drag=null;
-  cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};cv.setPointerCapture(e.pointerId);});
-  cv.addEventListener("pointermove",e=>{if(!drag)return;view3d.yaw+=(e.clientX-drag.x)*0.01;view3d.pitch=Math.max(0.15,Math.min(1.5,view3d.pitch+(e.clientY-drag.y)*0.008));drag={x:e.clientX,y:e.clientY};drawBlock();});
-  cv.addEventListener("pointerup",()=>drag=null);cv.addEventListener("pointercancel",()=>drag=null);
+/* 3D : rotation (drag) + sélection au toucher (tap) */
+let blockPick=[], blockSel=null;
+(function(){const cv=$("block");let drag=null,moved=0;
+  cv.addEventListener("pointerdown",e=>{drag={x:e.clientX,y:e.clientY};moved=0;cv.setPointerCapture(e.pointerId);});
+  cv.addEventListener("pointermove",e=>{if(!drag)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;moved+=Math.abs(dx)+Math.abs(dy);
+    view3d.yaw+=dx*0.01;view3d.pitch=Math.max(0.15,Math.min(1.5,view3d.pitch+dy*0.008));drag={x:e.clientX,y:e.clientY};drawBlock();});
+  cv.addEventListener("pointerup",e=>{
+    if(drag&&moved<6){ // tap : sélectionner le point le plus proche
+      const r=cv.getBoundingClientRect();const mx=(e.clientX-r.left),my=(e.clientY-r.top);
+      let best=null,bd=1e9;blockPick.forEach(o=>{const d=(o.x-mx)**2+(o.y-my)**2;if(d<bd){bd=d;best=o;}});
+      if(best&&bd<2000){blockSel=(blockSel===best.idx?null:best.idx);drawBlock();}
+    }
+    drag=null;});
+  cv.addEventListener("pointercancel",()=>drag=null);
 })();
 $("exagR").addEventListener("input",e=>{view3d.exag=+e.target.value;drawBlock();});
-$("reset3d").addEventListener("click",()=>{view3d.yaw=-0.4;view3d.pitch=1.05;drawBlock();});
+$("exagH").addEventListener("input",e=>{view3d.exagH=+e.target.value;drawBlock();});
+document.querySelectorAll("#modeSeg button").forEach(b=>b.addEventListener("click",()=>{
+  view3d.mode=b.dataset.m;document.querySelectorAll("#modeSeg button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.m===view3d.mode));drawBlock();}));
+$("reset3d").addEventListener("click",()=>{view3d.yaw=-0.4;view3d.pitch=1.05;blockSel=null;drawBlock();});
+$("fs3d").addEventListener("click",()=>{const el=$("blockWrap");
+  if(document.fullscreenElement===el){document.exitFullscreen&&document.exitFullscreen();}
+  else if(el.requestFullscreen){el.requestFullscreen().catch(()=>{});}});
+document.addEventListener("fullscreenchange",()=>{const on=document.fullscreenElement===$("blockWrap");
+  $("fs3d").textContent=on?"⛶ Quitter":"⛶ Plein écran";
+  if(on)$("blockWrap").style.background="#fff"; else $("blockWrap").style.background="";
+  setTimeout(()=>{if(R&&R.ok)drawBlock();},60);});
 
 /* projets */
 function renderProjSel(){const s=$("projSel");s.innerHTML=projects.map(p=>`<option value="${p.id}" ${p.id===curId?"selected":""}>${esc(p.title)}</option>`).join("");}
@@ -643,11 +830,17 @@ $("dlgCancel").addEventListener("click",()=>$("nameDlg").close());
 $("dlgInput").addEventListener("keydown",e=>{if(e.key==="Enter")$("dlgOk").click();});
 
 /* ===================== init ===================== */
+// fond satellite
+try{satOn=localStorage.getItem("piste2.sat")==="1"; satSrc=localStorage.getItem("piste2.satsrc")||"ign";}catch(e){}
+$("satToggle").checked=satOn; $("satSrc").value=satSrc; $("satSrc").hidden=!satOn;
+$("satToggle").addEventListener("change",e=>{satOn=e.target.checked;$("satSrc").hidden=!satOn;try{localStorage.setItem("piste2.sat",satOn?"1":"0")}catch(_){}drawPlan();});
+$("satSrc").addEventListener("change",e=>{satSrc=e.target.value;tileCache.clear();try{localStorage.setItem("piste2.satsrc",satSrc)}catch(_){}drawPlan();});
+
 loadAll(); renderProjSel(); renderPointList(); setPointHint(); syncTargetInputs(); bindTarget(); recompute();
 window.addEventListener("resize",()=>{if(R&&R.ok){drawPlan();drawBlock();drawProfile();}});
 
 if("serviceWorker" in navigator && location.protocol.startsWith("http")) navigator.serviceWorker.register("sw.js").catch(()=>{});
-function netChip(){$("chipStatus").textContent="CC46 · "+(navigator.onLine?"en ligne":"hors ligne");}
+function netChip(){$("chipStatus").textContent="CC46 · "+(navigator.onLine?"en ligne":"hors ligne");if(R&&R.ok)drawPlan();}
 addEventListener("online",netChip);addEventListener("offline",netChip);netChip();
 </script>
 </body>
