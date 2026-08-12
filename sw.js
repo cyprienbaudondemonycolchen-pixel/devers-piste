@@ -1,5 +1,5 @@
 /* Service worker : cache-first, l'app tourne intégralement hors ligne. */
-const CACHE = "piste-v3";
+const CACHE = "piste-v8";
 const ASSETS = [
   "./", "./index.html", "./manifest.webmanifest",
   "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png"
@@ -19,6 +19,8 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
+  const u = new URL(e.request.url);
+  if (u.origin !== location.origin) return; // tuiles satellite & autres externes -> réseau direct
   e.respondWith(
     caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
       const copy = res.clone();
